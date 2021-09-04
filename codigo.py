@@ -219,5 +219,4 @@ extra1 = Sobretiempo(4,8,empleado2,today,True)
 nomina1 = Nomina(empleado2,today,extra1,prestamo1)
 nomina1.calculos(deduccion1.iess,deduccion1.comision,deduccion1.antiguedad)
 nomina1.mostrarNomina()
-extra1.calculo()
-extra1.mostrar()
+
