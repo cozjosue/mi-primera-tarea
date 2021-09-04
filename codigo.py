@@ -66,14 +66,14 @@ class Empleado:
         self.__id = nid
 
 class Obrero(Empleado):
-    def __init__(self, id, nom, suel, fing, ced, corr, tel,sind=True,cont=True):
-        super().__init__(id, nom, suel, fing, ced, corr, tel)
+    def __init__(self,nom, suel, fing, ced, corr, tel,sind=True,cont=True):
+        super().__init__(nom, suel, fing, ced, corr, tel)
         self.sindicato = sind
         self.contratocolectivo = cont
 
 class Administrativo(Empleado):
-    def __init__(self, id, nom, suel, fing, ced, corr, tel, com=True):
-        super().__init__(id, nom, suel, fing, ced, corr, tel)
+    def __init__(self,nom, suel, fing, ced, corr, tel, com=True):
+        super().__init__(nom, suel, fing, ced, corr, tel)
         self.comision = com
 
 class Prestamos:
@@ -108,8 +108,6 @@ class Prestamos:
         print('ID : {}  Empleado : {}   Valor: {}  Numero pagos: {}  Cuotas: {:.2f}  Saldo: {:.2f}'.format(self.id,self.empleado.nombre,self.valor,self.numpagos,self.cuotas,self.saldo) )
 
 
-
-
 class Sobretiempo:
     sec = 0
     def __init__(self,hrec,hext,emp,fec,estado=True):
@@ -121,18 +119,18 @@ class Sobretiempo:
         self.fecha = fec
         self.estado = estado
     
-    def calculo(self,valor):
+    def calculo(self):
         if self.estado==True:
-            valorecargo = valor * 0.25
-            self.pagorecargo = self.horarecargo * valorecargo
-            self.pagoextra = valor * self.horasextraordianria
+            valor = self.empleado.sueldo/240
+            sobretiempo = valor * ((self.horarecargo*0.50)+(self.horasextraordianria*2))
+            return sobretiempo
         else:
-            self.pagorecargo = 0
-            self.pagoextra = 0
+            sobretiempo = 0
+            return sobretiempo
 
-    def mostrar(self,valor):
-        self.calculo(valor)
-        print('ID :{}      Empleado :{}       Pago Horas Extra:{}   Pago Horas Recargo:{}'.format(self.id,self.empleado.nombre,self.pagorecargo,self.pagoextra))
+    def mostrar(self):
+        cal = self.calculo()
+        print('ID :{}      Empleado :{}    Sobretiempo:{}'.format(self.id,self.empleado.nombre,cal))
 
     @property
     def id(self):
@@ -145,10 +143,10 @@ class Sobretiempo:
         
 class Deducciones:
     sec = 0
-    def __init__(self,iess,com,anti):
+    def __init__(self,com=0,anti=0):
         Deducciones.sec +=1
         self.__id = Deducciones.sec
-        self.iess = iess
+        self.iess = 0.1115
         self.comision = com
         self.antiguedad = anti
 
@@ -164,49 +162,62 @@ class Deducciones:
         print('ID:{}     IEES:{}    Comision:{}   Antiguedad:{}'.format(self.id,self.iess,self.comision,self.antiguedad))
 
 class Nomina:
-    def __init__(self,empleado,fecha,sobretiempo,totalingreso,prestamo,totaldescuento,liquides):
+    sec =0
+    def __init__(self,empleado,fecha,sobretiempo,prestamo):
+        Nomina.sec += 1
+        self.__id = Nomina.sec
         self.empleado = empleado
-        self.fecha = fecha
-        self.sobretiempo = sobretiempo
+        self.fecha=fecha
         self.sueldo = self.empleado.sueldo
-        self.totalingreso = totalingreso
+        self.sobretiempo = sobretiempo
         self.prestamo = prestamo
-        self.totaldescuento = totaldescuento
-        self.liquides= liquides
+    
+    def calculos(self,iess,comision=0,antiguedad=0):
 
-    def mostrarNomina(self,valor,iees,comision,antiguedad):
+        self.comisionemp = comision * self.sueldo
+        self.antiguedad = antiguedad*((self.fecha - self.empleado.fechaingreso).days)/365*self.sueldo
+        self.Empleadoiess = iess*self.empleado.sueldo
+        self.totingresos = self.sueldo + self.sobretiempo.calculo()  +  self.comisionemp + self.antiguedad 
+        self.totdes = self.Empleadoiess + self.prestamo.cuotas
+        self.liquido = self.totingresos - self.totdes
+        return self.totingresos , self.totdes , self.Empleadoiess , self.liquido , self.comisionemp , self.antiguedad
+    @property
+    def id(self):
+        return self.__id
+    
+    @id.setter
+    def id(self,valor):
+        self.__id = valor 
+           
+    def mostrarNomina(self):
         print('        NOMINA        ')
-        print('Fecha : {}'.format(self.fecha))
+        print('Fecha : {}  ID Nomina:{}'.format(self.fecha,self.id))
         print('Empleado : {} '.format(self.empleado.nombre))
-        self.sobretiempo.calculo(valor)
         print('Descripcion      Subtotal')
         print('Sueldo             {} '.format(self.sueldo))
-        print('Horas Extra        {}'.format(self.sobretiempo.pagoextra))
-        print('Horas Recargo      {}'.format(self.sobretiempo.pagorecargo))
+        print('Sobretiempo        {}'.format(self.sobretiempo.calculo()))
         self.prestamo.calcular()
         print('Prestamo           {:.2f}'.format(self.prestamo.cuotas))
-        print('IEES               {}'.format(self.sueldo*iees))
-        print('Comision           {}'.format(comision))
-        print('Antiguedad         {}'.format(antiguedad))
-        self.totalingreso = self.sueldo+self.sobretiempo.pagoextra+self.sobretiempo.pagorecargo+comision+antiguedad
-        self.totaldescuento = self.prestamo.cuotas+(self.sueldo*iees)
-        print('Total Ingreso      {}'.format(self.totalingreso))
-        print('Total a Descontar  {:.2f}'.format(self.totaldescuento))
-        print('Total a recibir   ${:.2f}'.format(self.totalingreso-self.totaldescuento))
+        print('IEES               {}'.format(self.Empleadoiess))
+        print('Comision           {}'.format(self.comisionemp))
+        print('Antiguedad         {:.2f}'.format(self.antiguedad)) 
+        print('Total Ingreso      {}'.format(self.totingresos))
+        print('Total a Descontar  {:.2f}'.format(self.totdes))
+        print('Total a recibir   ${:.2f}'.format(self.liquido))
 
 
 today = date.today()
-empleado1 = Empleado('Josue',800,'27/08/2019','9999','correo','09999')
-prestamo1 = Prestamos(today,800,12,empleado1,False)
-deduccion1=Deducciones(0.1115,80,80)
+empleado1 = Empleado('Josue',800,20210904,'9999','correo','09999')
+prestamo1 = Prestamos(today,800,12,empleado1,True)
+deduccion1= Deducciones(2,0)
+empleado2 = Administrativo('Josue',700,date(2019,11,25),'9999','correo','09999')
 # prestamo1.mostrarPrestamo()
-
-
-
 # empleado2=Empleado('Marcos',700,'15/08/2019','9999','correo','09999')
 # prestamo2 = Prestamos(today,1500,12,empleado2,True)
 # prestamo2.mostrarPrestamo()
-
-extra1 = Sobretiempo(4,8,empleado1,today,False)
-nomina1 = Nomina(empleado1,today,extra1,0,prestamo1,0,0)
-nomina1.mostrarNomina(8,deduccion1.iess,deduccion1.comision,deduccion1.antiguedad)
+extra1 = Sobretiempo(4,8,empleado2,today,True)
+nomina1 = Nomina(empleado2,today,extra1,prestamo1)
+nomina1.calculos(deduccion1.iess,deduccion1.comision,deduccion1.antiguedad)
+nomina1.mostrarNomina()
+extra1.calculo()
+extra1.mostrar()
